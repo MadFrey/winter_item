@@ -239,18 +239,20 @@ func UpdateComment(DB *sql.DB, id int, content string, photo string) (int64, err
 	return count, err
 }
 
-func DeleteCommentWithId(DB *sql.DB, id int,username string) (int64, bool) {
+func DeleteCommentWithId(DB *sql.DB, id int,username string,judge int) (int64, bool) {
 	sqlstr := "select Model,Username from comment where id = ?"
 	row := DB.QueryRow(sqlstr, id)
 	var model int
 	var UserId string
-	err := row.Scan(&model,UserId)
+	err := row.Scan(&model,&UserId)
 	if err != nil {
 		log.Println(err)
 		return 0, false
 	}
-	if UserId!=username {
-		return 0, false
+	if judge==1 {
+		if UserId!=username {
+			return 0, false
+		}
 	}
 	if model == 2 {
 		sqlstr := "delete from comment where id=?"
@@ -310,7 +312,7 @@ func DeleteArticleCommentWithId(DB *sql.DB, PostId int,username string) (int64, 
 			log.Println(err)
 			return 0, false
 		}
-		count,ok= DeleteCommentWithId(dao.DB, id,username)
+		count,ok= DeleteCommentWithId(dao.DB, id,username,0)
 		if ok==false {
 			return 0, false
 		}

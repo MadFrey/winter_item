@@ -70,6 +70,6 @@ func UpdateComment(id int, content string, photo string) (int64, error) {
 }
 
 func DeleteComment(id int,username string) (int64, bool) {
-	_,  ok:= model.DeleteCommentWithId(dao.DB, id,username)
+	_,  ok:= model.DeleteCommentWithId(dao.DB, id,username,1)
 	return 0, ok
 }

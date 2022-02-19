@@ -309,7 +309,7 @@ func ArticleDelete(c *gin.Context) {
 		})
 		return
 	}
-	id, _ := strconv.Atoi(c.Param("PostId"))
+	id, _ := strconv.Atoi(c.Param("post_id"))
 	_, ok:= service.DeleteArticleProcess(id,Token.Username)
 	if ok ==false {
 		c.JSONP(http.StatusOK, gin.H{

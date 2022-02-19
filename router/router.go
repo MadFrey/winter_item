@@ -27,7 +27,7 @@ func CreateRouter()*gin.Engine {
 		postgres.POST("/single",controller.PostSinglePost)
 		postgres.PUT("/single/:PostId",controller.UpdatePostPut)
 		postgres.GET("/search",controller.ArticleSearchGet)
-		postgres.DELETE("/single/:PostId",controller.ArticleDelete)
+		postgres.DELETE("/single/:post_id",controller.ArticleDelete)
 	}
 	r.GET("/topic/list",controller.AllTopicGet)
 
