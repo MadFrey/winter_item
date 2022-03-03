@@ -12,6 +12,7 @@ func RegisterPost(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
 	rePassword := c.PostForm("rePassword")
+<<<<<<< HEAD
 
 	if username == "" {
 		util.PrintInfo(c, "用户名不能为空！", 100)
@@ -22,6 +23,8 @@ func RegisterPost(c *gin.Context) {
 		return
 	}
 
+=======
+>>>>>>> 711e2123b1d876eda7020571c19cd7d504254e17
 	if len(password) > 16 {
 		util.PrintInfo(c, "密码长度超出限制！", 100)
 		return
@@ -29,7 +32,10 @@ func RegisterPost(c *gin.Context) {
 		util.PrintInfo(c, "密码太短！", 100)
 		return
 	}
+<<<<<<< HEAD
 
+=======
+>>>>>>> 711e2123b1d876eda7020571c19cd7d504254e17
 	if password != rePassword {
 		c.JSONP(http.StatusOK, gin.H{
 			"code":    100,
@@ -40,7 +46,7 @@ func RegisterPost(c *gin.Context) {
 	flag := service.JudgeUserExist(username, password)
 	if flag{
 		c.JSONP(http.StatusOK,gin.H{
-			"code":    1,
+			"code":    100,
 			"message": "用户名已经存在",
 		})
 		return
@@ -48,7 +54,7 @@ func RegisterPost(c *gin.Context) {
 	_,err:=service.AddNewUserProcess(username,password)
 	if err != nil {
 		c.JSONP(http.StatusOK,gin.H{
-			"code":    1,
+			"code":    805,
 			"message": "注册失败",
 		})
 		return

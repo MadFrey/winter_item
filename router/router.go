@@ -23,7 +23,7 @@ func CreateRouter()*gin.Engine {
 	postgres:=r.Group("/post")
 	{
 		postgres.GET("/list",controller.ArticleListGet)
-		postgres.GET("/single/:PostId",controller.PostContentGet)
+		postgres.GET("",controller.PostContentGet)
 		postgres.POST("/single",controller.PostSinglePost)
 		postgres.PUT("/single/:PostId",controller.UpdatePostPut)
 		postgres.GET("/search",controller.ArticleSearchGet)
