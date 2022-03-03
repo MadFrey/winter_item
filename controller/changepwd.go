@@ -47,7 +47,7 @@ func ChangeUserPwdPut(c *gin.Context) {
 		panic(err)
 	}
 	c.JSONP(http.StatusOK,gin.H{
-		"code":0,
+		"code":10000,
 		"message":"密码修改成功",
 	})
 }
