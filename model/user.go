@@ -89,5 +89,16 @@ func QueryUserInfoWithId(id int) (string, string, string, string) {
 	return username,avatarUrl,nickname,introduction
 }
 
+func QueryUserPwd(username string) string {
+	sqlstr:="select password from user where username=?"
+	row:=dao.DB.QueryRow(sqlstr,username)
+	pwd:=""
+	err := row.Scan(&pwd)
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+	return pwd
+}
 
 

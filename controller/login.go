@@ -41,6 +41,6 @@ func LogoutGet(c *gin.Context)  {
 	s:=sessions.Default(c)
 	s.Delete("loginUser")
 	_=s.Save()
-	//重定向
+	//重定向到主页
 	c.Redirect(http.StatusMovedPermanently,"https://blog.csdn.net/qq_36431213/article/details/82967982")
 }

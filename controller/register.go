@@ -2,6 +2,7 @@ package controller
 
 import (
 	"blog/service"
+	"blog/util"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -12,9 +13,26 @@ func RegisterPost(c *gin.Context) {
 	password := c.PostForm("password")
 	rePassword := c.PostForm("rePassword")
 
+	if username == "" {
+		util.PrintInfo(c, "用户名不能为空！", 100)
+		return
+	}
+	if len(username) > 20 {
+		util.PrintInfo(c, "用户名长度超出限制！", 100)
+		return
+	}
+
+	if len(password) > 16 {
+		util.PrintInfo(c, "密码长度超出限制！", 100)
+		return
+	} else if len(password) < 8 {
+		util.PrintInfo(c, "密码太短！", 100)
+		return
+	}
+
 	if password != rePassword {
 		c.JSONP(http.StatusOK, gin.H{
-			"code":    1,
+			"code":    100,
 			"message": "两次密码不一致",
 		})
 		return

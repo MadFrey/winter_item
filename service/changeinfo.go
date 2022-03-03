@@ -3,6 +3,8 @@ package service
 import (
 	"blog/dao"
 	"blog/model"
+	"blog/util"
+	"log"
 )
 
 func UpdatePersonalInfo	(username string,email string,NickName string,AvatarUrl string,Gender string,introduction string,qq int,birthday string,phone int) (int64,error) {
@@ -34,7 +36,12 @@ func GetUserinfo(username string) model.User {
 }
 
 func UpdateUserPwd(username string,NewPassword string)(int64,error)  {
-	return model.ChangeUserPwd(dao.DB,username,NewPassword)
+	hash, err := util.PasswordHash(NewPassword)
+	if err != nil {
+		log.Println(err)
+		return 0, err
+	}
+	return model.ChangeUserPwd(dao.DB,username,hash)
 }
 
 
