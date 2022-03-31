@@ -5,16 +5,15 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-
 var DB *sql.DB
 
-func Init(dns string) (err error)  {
-	database,err:=sql.Open("mysql",dns)
+func Init(dns string) (err error) {
+	database, err := sql.Open("mysql", dns)
 	if err != nil {
 		return err
 	}
-	DB=database
-	err=DB.Ping()
+	DB = database
+	err = DB.Ping()
 	if err != nil {
 		return err
 	}
@@ -24,4 +23,8 @@ func Init(dns string) (err error)  {
 
 func QueryRowsDB(DB *sql.DB, sqlstr string) (*sql.Rows, error) {
 	return DB.Query(sqlstr)
+}
+
+func OpenTransaction() (*sql.Tx, error) {
+	return DB.Begin()
 }

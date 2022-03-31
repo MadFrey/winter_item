@@ -87,7 +87,7 @@ func QueryPraiseCount(id int) int {
 }
 
 func QueryArticleFocus(id int, username string) bool {
-	println(id,username)
+	println(id, username)
 	sqlstr := "select id from focus where username=? and ArticleId=?"
 	var f Focus
 	err := dao.DB.QueryRow(sqlstr, username, id).Scan(&f.ArticleId)
@@ -108,7 +108,7 @@ func QueryArticlePraise(id int, username string) bool {
 	return true
 }
 
-func QueryArticleWithId(DB *sql.DB, id int,username string) (Article,error) {
+func QueryArticleWithId(DB *sql.DB, id int, username string) (Article, error) {
 	sqlstr := "select Title,Author,Pictures,Content,CreateTime,Avatar,Username,TopicId from article where id = ?"
 	article := Article{}
 	row := DB.QueryRow(sqlstr, id)
@@ -116,9 +116,9 @@ func QueryArticleWithId(DB *sql.DB, id int,username string) (Article,error) {
 		&article.Avatar, &article.Username, &article.TopicId)
 	if err != nil {
 		log.Println(err)
-		return Article{},err
+		return Article{}, err
 	}
-	article.Id=id
+	article.Id = id
 	article.IsFocus = QueryArticleFocus(article.Id, username)
 	article.IsPraised = QueryArticlePraise(article.Id, username)
 	article.FocusCount = QueryFocusCount(article.Id)
@@ -126,7 +126,7 @@ func QueryArticleWithId(DB *sql.DB, id int,username string) (Article,error) {
 	article = Article{Id: article.Id, TopicId: article.TopicId, Title: article.Title, Content: article.Content, Pictures: article.Pictures,
 		Author: article.Author, Username: article.Username, CreateTime: article.CreateTime, Avatar: article.Avatar, PraiseCount: article.PraiseCount,
 		FocusCount: article.FocusCount, IsFocus: article.IsFocus, IsPraised: article.IsPraised}
-	return article,err
+	return article, err
 }
 func NoTokenQueryArticleWithId(DB *sql.DB, id int) Article {
 	sqlstr := "select Title,Author,Pictures,Content,CreateTime,Avatar,Username,TopicId from article where id = ?"
@@ -138,7 +138,7 @@ func NoTokenQueryArticleWithId(DB *sql.DB, id int) Article {
 		log.Println(err)
 		return Article{}
 	}
-	article.Id=id
+	article.Id = id
 	article.IsPraised = false
 	article.IsFocus = false
 	article.FocusCount = QueryFocusCount(article.Id)
@@ -204,7 +204,7 @@ func NoTokenQueryArticleWithPage(DB *sql.DB, pageNum int, size int) ([]Article, 
 func UpdateArticle(DB *sql.DB, article RetArticle) (int64, error) {
 	sqlstr := "update article set Title=?,TopicId=?,Pictures=?,Content=? where id=?"
 	imageString := util.ArrayToString(article.Pictures)
-	return dao.ModifyDB(DB, sqlstr, article.Title,article.TopicId,imageString,article.Content, article.Id)
+	return dao.ModifyDB(DB, sqlstr, article.Title, article.TopicId, imageString, article.Content, article.Id)
 }
 
 func InsertArticle(DB *sql.DB, article Article) (int64, error) {
@@ -217,40 +217,67 @@ func InsertArticle(DB *sql.DB, article Article) (int64, error) {
 	return id, err
 }
 
-func DeleteArticleWithId(DB *sql.DB, id int,username string) (int64, bool) {
-	ar:=NoTokenQueryArticleWithId(DB,id)
-	if ar.Username!=username {
-		return 0,false
+//DeleteArticleWithId 改用事务对多条数据进行处理
+func DeleteArticleWithId(DB *sql.DB, id int, username string) (int64, bool) {
+	ar := NoTokenQueryArticleWithId(DB, id)
+	tx, err := dao.OpenTransaction()
+	if err != nil {
+		return 0, false
+	}
+	if ar.Username != username {
+		return 0, false
 	}
 	sqlstr := "delete from article where id = ?"
-	_, ok := DeleteArticleCommentWithId(DB, id,username)
-	if ok ==false {
-		return 0, false
-	}
-	_, err := DeleteArticleFocus(id)
+	result, err := tx.Exec(sqlstr, id)
 	if err != nil {
-		log.Println(err)
-		return 0, false
-	}
-	_, err = DeleteArticlePraise(id)
-	if err != nil {
-		log.Println(err)
-		return 0, false
-	}
-	_, err = deleteCollect(id)
-	if err != nil {
-		log.Println(err)
-		return 0, false
-	}
-	result, err := DB.Exec(sqlstr,id)
-	if err != nil {
-		return 0, false
+		err := tx.Rollback()
+		if err != nil {
+			log.Println(err)
+			return 0, false
+		}
 	}
 	affected, err := result.RowsAffected()
 	if err != nil {
 		return 0, false
 	}
-	return affected,true
+
+	sqlstr2 := "delete from focus where ArticleId=?"
+	_, err = tx.Exec(sqlstr2, id)
+	if err != nil {
+		err := tx.Rollback()
+		if err != nil {
+			log.Println(err)
+			return 0, false
+		}
+	}
+	sqlstr3 := "delete from praise where postId=?"
+	_, err = tx.Exec(sqlstr3, id)
+	if err != nil {
+		err := tx.Rollback()
+		if err != nil {
+			log.Println(err)
+			return 0, false
+		}
+	}
+	sqlstr4 := "delete from collect where postId=?"
+	_, err = tx.Exec(sqlstr4, id)
+	if err != nil {
+		err := tx.Rollback()
+		if err != nil {
+			log.Println(err)
+			return 0, false
+		}
+	}
+	_, ok := DeleteArticleCommentWithId(DB, id, username)
+	if ok == false {
+		return 0, false
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Println(err)
+		return 0, false
+	}
+	return affected, true
 }
 
 func QueryArticleWithKey(DB *sql.DB, key string, page int, size int) []Article {
@@ -260,8 +287,8 @@ func QueryArticleWithKey(DB *sql.DB, key string, page int, size int) []Article {
 		log.Println(err)
 	}
 	var (
-		count=0
-		max int
+		count    = 0
+		max      int
 		articles []Article
 	)
 	defer rows.Close()
@@ -274,10 +301,10 @@ func QueryArticleWithKey(DB *sql.DB, key string, page int, size int) []Article {
 		count++
 	}
 	var searchList []Article
-	if count<page*size {
-		max=count
-	}else {
-		max=page*size
+	if count < page*size {
+		max = count
+	} else {
+		max = page * size
 	}
 	for i := (page - 1) * size; i < max; i++ {
 		searchList = append(searchList, articles[i])
@@ -285,9 +312,9 @@ func QueryArticleWithKey(DB *sql.DB, key string, page int, size int) []Article {
 	return searchList
 }
 
-func DeleteArticleFocus(postId int)(int64,error)  {
-	sqlstr:="delete from focus where ArticleId=?"
-	result,err:=dao.DB.Exec(sqlstr,postId)
+func DeleteArticleFocus(postId int) (int64, error) { //后续改成单独的用户操作
+	sqlstr := "delete from focus where ArticleId=?"
+	result, err := dao.DB.Exec(sqlstr, postId)
 	if err != nil {
 		log.Println(err)
 		return 0, err
@@ -297,12 +324,12 @@ func DeleteArticleFocus(postId int)(int64,error)  {
 		log.Println(err)
 		return 0, err
 	}
-	return affected,err
+	return affected, err
 }
 
-func DeleteArticlePraise(postId int) (int64, error) {
-	sqlstr:="delete from praise where postId=?"
-	result, err := dao.DB.Exec(sqlstr,postId)
+func DeleteArticlePraise(postId int) (int64, error) { //后续改成单独的用户操作
+	sqlstr := "delete from praise where postId=?"
+	result, err := dao.DB.Exec(sqlstr, postId)
 	if err != nil {
 		log.Println(err)
 		return 0, nil
@@ -312,5 +339,5 @@ func DeleteArticlePraise(postId int) (int64, error) {
 		log.Println(err)
 		return 0, nil
 	}
-	return affected,err
+	return affected, err
 }
