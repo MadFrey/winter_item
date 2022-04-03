@@ -8,19 +8,19 @@ import (
 )
 
 type User struct {
-	id           int
-	Phone        int
-	Birthday     string
-	Introduction string
-	Qq           int
-	Username     string
-	Password     string
-	Email        string
-	CreateTime   time.Time `json:"createTime" form:"createTime"`
-	IsAdmin      bool      //是否管理员
-	AvatarUrl    string    //头像链接
-	NickName     string
-	Gender       string
+	Id           int       `gorm:"column:id"`
+	Phone        int       `gorm:"column:phone"`
+	Birthday     string    `gorm:"column:birthday"`
+	Introduction string    `gorm:"column:introduction"`
+	Qq           int       `gorm:"column:qq"`
+	Username     string    `gorm:"column:username"`
+	Password     string    `gorm:"column:password"`
+	Email        string    `gorm:"column:email"`
+	CreateTime   time.Time `gorm:"create_time" json:"createTime" form:"createTime"`
+	IsAdmin      bool      `gorm:"column:IsAdmin"`
+	NickName     string    `gorm:"column:NickName"`
+	Gender       string    `gorm:"column:Gender"`
+	AvatarUrl    string    `gorm:"column:AvatarUrl"`
 }
 
 func QueryUserWithSql(DB *sql.DB, sqlstr string) int {
@@ -37,14 +37,27 @@ func QueryUserWithSql(DB *sql.DB, sqlstr string) int {
 	}
 	return id
 }
-func QueryIdWithUsername(DB *sql.DB, username string) int {
-	sqlstr := "select id from user where username='" + username + "'"
-	return QueryUserWithSql(DB, sqlstr)
+func QueryIdWithUsername(username string) int {
+	db, err := dao.OpenGormLink()
+	if err != nil {
+		log.Println(err)
+		return 0
+	}
+	var user User
+	db.Where("username=?", username).First(&user)
+	return user.Id
 }
 
-func QueryIdWithUserPwd(DB *sql.DB, username string, password string) int {
-	sqlstr := "select id from user where username='" + username + "' and password='" + password + "'"
-	return QueryUserWithSql(DB, sqlstr)
+func DeleteUser(username string, password string) int64 {
+	db, err := dao.OpenGormLink()
+	if err != nil {
+		log.Println(err)
+		return 0
+	}
+	var user User
+	db.Where("username=? AND password=?", username, password).First(&user)
+	result := db.Delete(&user) //db.where().delete()
+	return result.RowsAffected
 }
 
 func InsertUser(DB *sql.DB, user User) (int64, error) {
@@ -53,7 +66,7 @@ func InsertUser(DB *sql.DB, user User) (int64, error) {
 }
 
 func QueryUserInfo(DB *sql.DB, username string) User {
-	id := QueryIdWithUsername(DB, username)
+	id := QueryIdWithUsername(username)
 	sqlstr := "select username,email,create_time,NickName,AvatarUrl,Gender,introduction,qq,birthday,phone from user where id = ?"
 	var u1 User
 	err := DB.QueryRow(sqlstr, id).Scan(&u1.Username, &u1.Email, &u1.CreateTime, &u1.NickName, &u1.AvatarUrl, &u1.Gender, &u1.Introduction, &u1.Qq, &u1.Birthday, &u1.Phone)
@@ -61,19 +74,24 @@ func QueryUserInfo(DB *sql.DB, username string) User {
 		log.Println(err)
 		return User{}
 	}
-	u1.id = id
+	u1.Id = id
 	return u1
 }
 
 func UpdateUserInfo(db *sql.DB, u1 User) (int64, error) {
-	id := QueryIdWithUsername(db, u1.Username)
+	id := QueryIdWithUsername(u1.Username)
 	sqlstr := "update user set email=?,NickName=?,AvatarUrl=?,Gender=?,qq=?,birthday=?,introduction=?,phone=? where id = ?"
 	return dao.ModifyDB(db, sqlstr, u1.Email, u1.NickName, u1.AvatarUrl, u1.Gender, u1.Qq, u1.Birthday, u1.Introduction, u1.Phone, id)
 }
-func ChangeUserPwd(db *sql.DB, username string, password string) (int64, error) {
-	id := QueryIdWithUsername(db, username)
-	sqlstr := "update user set password=? where id=?"
-	return dao.ModifyDB(db, sqlstr, password, id)
+func ChangeUserPwd(username string, password string) (int64, error) {
+	db, err := dao.OpenGormLink()
+	if err != nil {
+		log.Println(err)
+		return 0, nil
+	}
+	result := db.Where("username=?", username).Update("password", password)
+	rows := result.RowsAffected
+	return rows, err
 }
 
 func QueryUserInfoWithId(id int) (string, string, string, string) {

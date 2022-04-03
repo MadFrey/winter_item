@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"log"
+	"time"
 )
 
 var rdb *redis.Client
@@ -23,7 +24,7 @@ func InitClient() (err error) {
 }
 
 func StoreVerCode(code string) {
-	rdb.Set(code, fmt.Sprintf("%s", code), 60)
+	rdb.Set(code, fmt.Sprintf("%s", code), 60*time.Second)
 }
 
 func VerifyCode(code string) bool {

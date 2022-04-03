@@ -52,6 +52,6 @@ func CreateRouter() *gin.Engine {
 	//新接口
 	r.GET("/Oauth/login", controller.HTMLGet)
 	r.GET("/Oauth/redirect", controller.Oauth)
-	r.POST("/verCode", middleware.Jwt(), controller.VCodeGet)
+	r.GET("/verCode", middleware.Jwt(), controller.VCodeGet)
 	return r
 }

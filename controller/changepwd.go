@@ -46,14 +46,15 @@ func ChangeUserPwdPut(c *gin.Context) {
 	ok = util.VerifyCode(VCode)
 	if !ok {
 		util.PrintInfo(c, "验证码错误", 1)
+	} else {
+		newPassword := c.PostForm("newPassword")
+		_, err = service.UpdateUserPwd(parseToken.Username, newPassword)
+		if err != nil {
+			panic(err)
+		}
+		c.JSONP(http.StatusOK, gin.H{
+			"code":    0,
+			"message": "密码修改成功",
+		})
 	}
-	newPassword := c.PostForm("newPassword")
-	_, err = service.UpdateUserPwd(parseToken.Username, newPassword)
-	if err != nil {
-		panic(err)
-	}
-	c.JSONP(http.StatusOK, gin.H{
-		"code":    0,
-		"message": "密码修改成功",
-	})
 }
